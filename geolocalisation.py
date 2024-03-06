@@ -1,81 +1,141 @@
 from collections import Counter
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.ticker as ticker
 import numpy as np
 import json
 import glob
 
-# Path to the JSON file
-json_files = glob.glob("C:/ccstudy/uofg/course/webscience/courseworks/code/data/datajson/geoLondonSep2022_*.json")
-
-London = np.array([[-0.563, 51.261318], [0.28036, 51.686031]])\
-
-def get_coordinates():
+class GeoLocalisation:
+    # Path to the JSON file
     
-    # Counters
-    total_tweets = 0
-    tweets_with_location = 0
-    tweets_without_location = 0
+    def __init__(self, json_files, geo_range):
+        self.json_files = json_files
+        self.geo_range = geo_range
+        self.get_coordinates()
+        self.check_in_geo_range()  
+        print(f"Total tweets: {self.total_tweets}")
+        print(f"Tweets with location: {self.tweets_with_location}")
+        print(f"Tweets without location: {self.tweets_without_location}")
 
-    # Array to store the coordinates
-    coordinates = []
+    
+    def processdata(self):
+        self.creategrid()
+        self.coordinates_to_index()
 
-    for json_file in json_files:
-        # Read the JSON file
-        with open(json_file, "r", encoding='utf-8') as file:
-            # Load the JSON data
-            data = json.load(file)
-            
-            # Iterate over each tweet
-            for tweet in data:
-                # Increment total tweets counter
-                total_tweets += 1
+    def get_coordinates(self):
+        
+        # Counters
+        self.total_tweets = 0
+        self.tweets_with_location = 0
+        self.tweets_without_location = 0
 
-                # Check if the tweet has coordinates
-                if "coordinates" in tweet:
-                    # Increment tweets with location counter
-                    tweets_with_location += 1
+        # Array to store the coordinates
+        self.coordinates = []
 
-                    # Add the coordinates to the array
-                    coordinates.append(tweet["coordinates"])
-                else:
-                    # Increment tweets without location counter
-                    tweets_without_location += 1
+        for json_file in self.json_files:
+            # Read the JSON file
+            with open(json_file, "r", encoding='utf-8') as file:
+                # Load the JSON data
+                data = json.load(file)
+                
+                # Iterate over each tweet
+                for tweet in data:
+                    # Increment total tweets counter
+                    self.total_tweets += 1
 
-    # Print the coordinates
-    print(f"Total tweets: {total_tweets}")
-    print(f"Tweets with location: {tweets_with_location}")
-    print(f"Tweets without location: {tweets_without_location}")
+                    # Check if the tweet has coordinates
+                    if "coordinates" in tweet:
+                        # Increment tweets with location counter
+                        self.tweets_with_location += 1
 
-    return coordinates
+                        # Add the coordinates to the array
+                        self.coordinates.append(tweet["coordinates"])
+                    else:
+                        # Increment tweets without location counter
+                        self.tweets_without_location += 1
 
-all_coordinates = np.array(get_coordinates())
+        self.coordinates = np.array(self.coordinates)
+        # Print the coordinates
+    
+    def check_in_geo_range(self):
+ 
+        in_range = (self.coordinates[:, 0] >= self.geo_range[0, 0]) & (self.coordinates[:, 0] <= self.geo_range[1, 0]) & \
+                    (self.coordinates[:, 1] >= self.geo_range[0, 1]) & (self.coordinates[:, 1] <= self.geo_range[1, 1])
 
-'''
-with open('coordinates.json', 'w', encoding='utf-8') as f:
-    json.dump(all_coordinates, f)
-'''
+        self.coordinates_in_range = self.coordinates[in_range]
+        print(self.coordinates_in_range.shape)
 
-in_london = (all_coordinates[:, 0] >= London[0, 0]) & (all_coordinates[:, 0] <= London[1, 0]) & \
-            (all_coordinates[:, 1] >= London[0, 1]) & (all_coordinates[:, 1] <= London[1, 1])
+    def ComputeDistance(self,lon1, lat1, lon2, lat2):
+        R = 6373.0
 
-coordinates_in_london = all_coordinates[in_london]
+        phi1 = lat1*np.pi/180
+        phi2 = lat2*np.pi/180
+        delta1 = (lat2-lat1)*np.pi/180
+        delta2 = (lon2-lon1)*np.pi/180
+        a = np.sin(delta1/2)**2 + np.cos(phi1)*np.cos(phi2)*np.sin(delta2/2)**2
+        c = 2*np.arctan2(np.sqrt(a), np.sqrt(1-a))
+        d = R*c
+        return d
 
-print(coordinates_in_london.shape)
+    def creategrid(self):
+        self.rows = int(np.ceil(self.ComputeDistance(self.geo_range[0,0], self.geo_range[0, 1], self.geo_range[0, 0], self.geo_range[1,1])))
+        self.cols = int(np.ceil(self.ComputeDistance(self.geo_range[0,0], self.geo_range[0, 1], self.geo_range[1,0], self.geo_range[0,1])))
+        self.noofgrids = int(self.rows*self.cols)
 
-max = np.max(all_coordinates[:,0])
-min = np.min(all_coordinates[:,0])
-print(max,min)
+        self.rowstep = (self.geo_range[1,1] - self.geo_range[0,1])/self.rows
+        self.colstep = (self.geo_range[1,0] - self.geo_range[0,0])/self.cols
+        self.rowpoints = []
+        self.colpoints = []
+        for i in range(self.rows):
+            self.rowpoints.append(self.geo_range[0,1]+i*self.rowstep)
+        for i in range(self.cols):
+            self.colpoints.append(self.geo_range[0,0]+i*self.colstep)   
+        #print(self.rowpoints,self.colpoints)
+        #print(len(self.rowpoints),len(self.colpoints))
+
+    
+    def coordinates_to_index(self):
+        self.coordinates_index = np.zeros((self.coordinates_in_range.shape[0],2))
+        for i in range(self.coordinates_in_range.shape[0]):
+            self.coordinates_index[i,1] = np.floor((self.coordinates_in_range[i,1] - self.geo_range[0, 1]) / self.rowstep)
+            self.coordinates_index[i,0] = np.floor((self.coordinates_in_range[i,0] - self.geo_range[0, 0]) / self.colstep)
+
+        self.heat_map = np.zeros((self.rows,self.cols))
+        for i in range(self.coordinates_index.shape[0]):
+            self.heat_map[int(self.coordinates_index[i,1]),int(self.coordinates_index[i,0])] += 1
+        self.log_heat_map = np.log1p(self.heat_map)
+
+    def draw_heat_map(self):
+        
+        plt.figure(figsize=(10 * self.cols / self.rows, 10))  
+        plt.imshow(self.log_heat_map, cmap='hot', interpolation='nearest', origin='lower') 
+        plt.colorbar()
+        plt.xlabel('grid_col')
+        plt.ylabel('grid_row')
+        plt.title('Heat Map (Log Scale)')
+        plt.xticks(np.arange(0, self.cols, 2))
+        plt.yticks(np.arange(0, self.rows, 2))
+        plt.show()
+
+    def draw_distribution_map(self):
+        plt.figure(figsize=(10, 5))
+        plt.hist(self.heat_map.flatten(), bins=100, range=(0, 1000))
+        plt.yscale('log')
+        plt.xlabel('Number of tweets')
+        plt.ylabel('Number of grids')
+        plt.title('Distribution of the number of tweets in each grid')
+        plt.show()
 
 
-max = np.max(all_coordinates[:,1])
-min = np.min(all_coordinates[:,1])
-print(max,min)
+if __name__ == '__main__':
+    json_files = glob.glob("C:/ccstudy/uofg/course/webscience/courseworks/code/data/datajson/geoLondonSep2022_*.json")
+    London = np.array([[-0.563, 51.261318], [0.28036, 51.686031]])
+    London_geo = GeoLocalisation(json_files, London)
+    London_geo.processdata()
+    London_geo.draw_heat_map()
+    London_geo.draw_distribution_map()
 
-
-# Count the occurrences of each value
-counter = Counter(all_coordinates)
-
-# Get the five most common values
-most_common = counter.most_common(5)
-
-print(most_common)
-
+    print(f"Total tweets: {London_geo.total_tweets}")
+    print(f"Tweets with location: {London_geo.tweets_with_location}")
+    print(f"Tweets without location: {London_geo.tweets_without_location}")
