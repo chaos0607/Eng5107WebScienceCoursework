@@ -100,32 +100,38 @@ if __name__ == "__main__":
             #Accuracy: 0.7264150943396226 err_rate: 0.17154915590863953 Absolute average: 2.568919975949908
         
         elif test == 17:
-            #2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
+            #q2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
             #remove '@xxx' from tokens
             #Accuracy: 0.7552135054617676 err_rate: 0.1685700099304866 Absolute average: 2.543423123885329
             pass
         elif test == 18:
-            #2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
+            #q2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
             #remove '#' from tokens
             #Accuracy: 0.7706057596822244 err_rate: 0.16931479642502484 Absolute average: 2.553174704476823
             pass   
         elif test == 19:
-            #2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
+            #q2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
             #remove '#xxx' from tokens
             #Accuracy: 0.7542204568023834 err_rate: 0.1673286991062562 Absolute average: 2.5675847819967803
             pass
         elif test == 20:
-            #2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
+            #q2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
             #remove url from tokens
             #Accuracy: 0.7465243296921549 err_rate: 0.1641012909632572 Absolute average: 2.5648673761235705
             pass
         elif test == 21:
-            #2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
+            #q2_test(3,3,empty_stopwords,2,hq_model,lq_model,bg_model)
             #remove all above from tokens
             #Accuracy: 0.7313803376365442 err_rate: 0.16906653426017876 Absolute average: 2.5388060548869027
             pass
+
+        elif test == 22:
+            q2_test(3,3,empty_stopwords,0.5,hq_model,lq_model,bg_model)
+            #remove '#' from tokens
+            #final setting
+            #Accuracy: 0.82025819265144 err_rate: 0.1643495531281033 Absolute average: 2.455630801452851
         else:
             raise ValueError("selete a test settingtest")
         
-    run_test(1)
+    run_test(22)
  
