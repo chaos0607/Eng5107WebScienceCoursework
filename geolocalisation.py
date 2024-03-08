@@ -170,5 +170,5 @@ if __name__ == '__main__':
         London_geo.processdata()
         London_geo.draw_heat_map()
         London_geo.draw_distribution_map()
-        London_geo.draw_heat_map_on_map(map_img_path)
+        #London_geo.draw_heat_map_on_map(map_img_path)
     q1()
